@@ -1,4 +1,4 @@
 ## AsyncRegexTester
-### A small regex test project with async/await in WPF
+### A small regex project for testing IProgress.Report() in WPF
 
 ![Application Image](Screenshoot.PNG)

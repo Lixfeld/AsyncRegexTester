@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -16,12 +17,17 @@ namespace AsyncRegexTester
     {
         private CancellationTokenSource cancellationTokenSource;
         private readonly ObservableCollection<DataGridColumn> dataGridGroupColumns;
-        private ObservableCollection<RegexResult> regexResultCollection = new ObservableCollection<RegexResult>();
+
+        public ObservableCollection<RegexResult> RegexResultCollection { get; } = new ObservableCollection<RegexResult>();
+
+        //No INotifyPropertyChanged Implementation (readonly) - Setter is needed for OneWayToSource-Binding
+        public string InputText { get; set; }
+        public string RegexPattern { get; set; }
 
         public MainWindow()
         {
             InitializeComponent();
-            dataGrid.ItemsSource = regexResultCollection;
+            DataContext = this;
 
             //Set DataGridColumns for groups (see xaml code)
             dataGridGroupColumns = new ObservableCollection<DataGridColumn>()
@@ -40,8 +46,8 @@ namespace AsyncRegexTester
             startButton.IsEnabled = false;
             cancellationTokenSource = new CancellationTokenSource();
 
-            regexResultCollection.Clear();
-            List<string> lines = inputTextBox.Text.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            RegexResultCollection.Clear();
+            List<string> lines = InputText.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).ToList();
 
             //Set up ProgressBarStatus
             searchProgressBar.Maximum = lines.Count;
@@ -51,13 +57,11 @@ namespace AsyncRegexTester
                 progressTextBlock.Text = status.Text;
             });
 
-            string regexPattern = regexPatternTextBox.Text;
-            OnlyShowUsedColumns(new Regex(regexPattern).GetGroupNumbers()?.Length ?? 0);
-
-            await SearchLinesAsync(lines, regexPattern, progress, cancellationTokenSource.Token);
+            OnlyShowUsedColumns(new Regex(RegexPattern).GetGroupNumbers()?.Length ?? 0);
+            await SearchLinesAsync(lines, progress, cancellationTokenSource.Token);
         }
 
-        private async Task SearchLinesAsync(IList<string> lines, string regexPattern, IProgress<ProgressStatus> progress, CancellationToken token)
+        private async Task SearchLinesAsync(IList<string> lines, IProgress<ProgressStatus> progress, CancellationToken token)
         {
             try
             {
@@ -67,7 +71,7 @@ namespace AsyncRegexTester
                 int matchCount = 0;
                 Match currentMatch;
                 IEnumerable<string> groups;
-                Regex regex = new Regex(regexPattern, RegexOptions.Multiline);
+                Regex regex = new Regex(RegexPattern, RegexOptions.Multiline);
                 for (int i = 0; i < lines.Count(); i++)
                 {
                     //Cancellation
@@ -81,7 +85,7 @@ namespace AsyncRegexTester
 
                         //Add matches/groups and line to collection
                         groups = currentMatch.Groups.OfType<Group>().Select(g => g.Value);
-                        regexResultCollection.Add(new RegexResult(++matchCount, lines[i], groups));
+                        RegexResultCollection.Add(new RegexResult(++matchCount, lines[i], groups));
                     }
                     progress.Report(new ProgressStatus(i + 1, "Matches: " + matchCount));
                 }
@@ -109,7 +113,7 @@ namespace AsyncRegexTester
 
         private void SetStartButtonStatus()
         {
-            if (!string.IsNullOrWhiteSpace(inputTextBox.Text) && !string.IsNullOrWhiteSpace(regexPatternTextBox.Text))
+            if (!string.IsNullOrWhiteSpace(InputText) && !string.IsNullOrWhiteSpace(RegexPattern))
             {
                 startButton.IsEnabled = true;
             }

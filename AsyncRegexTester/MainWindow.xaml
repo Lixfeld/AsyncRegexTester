@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:rule="clr-namespace:AsyncRegexTester.Classes"
         xmlns:local="clr-namespace:AsyncRegexTester"
         TextElement.Foreground="{DynamicResource MaterialDesignBody}"
         TextElement.FontWeight="Regular"
@@ -38,7 +39,8 @@
                  AcceptsReturn="True" 
                  VerticalScrollBarVisibility="Auto"
                  md:HintAssist.Hint="Input text"
-                 TextChanged="inputTextBox_TextChanged"/>
+                 TextChanged="inputTextBox_TextChanged"
+                 Text="{Binding InputText, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged}"/>
 
         <!--Grid.Row="2"-->
         <DockPanel Grid.Row="2" Margin="0 0 0 10">
@@ -46,7 +48,17 @@
                      FontSize="22"
                      VerticalContentAlignment="Bottom"
                      md:HintAssist.Hint="regular expression e.g. [^abc]*" 
-                     TextChanged="regexPatternTextBox_TextChanged"/>
+                     TextChanged="regexPatternTextBox_TextChanged">
+                <TextBox.Text>
+                    <Binding Path="RegexPattern"
+                             Mode="OneWayToSource"
+                             UpdateSourceTrigger="PropertyChanged">
+                        <Binding.ValidationRules>
+                            <rule:ValidRegexRule/>
+                        </Binding.ValidationRules>
+                    </Binding>
+                </TextBox.Text>
+            </TextBox>
         </DockPanel>
 
         <!--Grid.Row="3"-->
@@ -82,7 +94,8 @@
                   CanUserAddRows="False"
                   CanUserDeleteRows="False"
                   CanUserResizeRows="False"                  
-                  IsReadOnly="True">
+                  IsReadOnly="True"
+                  ItemsSource="{Binding RegexResultCollection}">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="No." 
                                     Binding="{Binding Number}"/>
