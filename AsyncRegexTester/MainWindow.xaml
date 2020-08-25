@@ -14,7 +14,7 @@
         Background="{DynamicResource MaterialDesignPaper}"
         FontFamily="{DynamicResource MaterialDesignFont}"
         Icon="GlobPatternFileSearch.png"
-        Title="AsyncRegexTester" MinWidth="440" MinHeight="500" Width="660" Height="500">
+        Title="AsyncRegexTester" MinWidth="550" MinHeight="500" Width="660" Height="500">
     <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -25,11 +25,25 @@
         </Grid.RowDefinitions>
 
         <!--Grid.Row="0"-->
-        <TextBlock TextWrapping="Wrap" Margin="0 0 10 0">
-            Multiline mode is on.<LineBreak/>
-            Beginning and end anchors (^ and $) will match the start
-            and end of any line and not just the entire string.
-        </TextBlock>
+        <DockPanel LastChildFill="False">
+            <TextBlock Text="Regex options:" 
+                       VerticalAlignment="Center"
+                       Margin="0 0 5 0"/>
+            <CheckBox x:Name="singlelineCheckBox" 
+                      Content="Singleline"
+                      IsChecked="{Binding IsSingleline, Mode=OneWayToSource}"/>
+            <CheckBox x:Name="multilineCheckBox" 
+                      Content="Multiline" 
+                      Margin="10 0"
+                      IsChecked="{Binding IsMultiline, Mode=OneWayToSource}"/>
+            <CheckBox x:Name="ignoreCaseCheckBox" 
+                      Content="Ignore Case" 
+                      IsChecked="{Binding IgnoreCase, Mode=OneWayToSource}"/>
+            <CheckBox x:Name="readLineByLineCheckBox" 
+                      DockPanel.Dock="Right"
+                      Content="Read line by line"
+                      IsChecked="{Binding ReadLineByLine, Mode=OneWayToSource}"/>
+        </DockPanel>
 
         <!--Grid.Row="1"-->
         <TextBox x:Name="inputTextBox"
@@ -39,7 +53,7 @@
                  AcceptsReturn="True" 
                  VerticalScrollBarVisibility="Auto"
                  md:HintAssist.Hint="Input text"
-                 TextChanged="inputTextBox_TextChanged"
+                 TextChanged="InputTextBox_TextChanged"
                  Text="{Binding InputText, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged}"/>
 
         <!--Grid.Row="2"-->
@@ -48,7 +62,7 @@
                      FontSize="22"
                      VerticalContentAlignment="Bottom"
                      md:HintAssist.Hint="regular expression e.g. [^abc]*" 
-                     TextChanged="regexPatternTextBox_TextChanged">
+                     TextChanged="RegexPatternTextBox_TextChanged">
                 <TextBox.Text>
                     <Binding Path="RegexPattern"
                              Mode="OneWayToSource"
@@ -67,12 +81,12 @@
                     DockPanel.Dock="Left"
                     Content="Cancel search"
                     IsEnabled="False"
-                    Click="cancelButton_Click"/>
+                    Click="CancelButton_Click"/>
             <Button x:Name="startButton"
                     DockPanel.Dock="Right"
                     Content="Start search" 
                     IsEnabled="False"
-                    Click="startButton_Click"/>
+                    Click="StartButton_Click"/>
             <Grid>
                 <ProgressBar x:Name="searchProgressBar"
                          Margin="10 0"
@@ -110,6 +124,7 @@
                 <DataGridTextColumn Header="Group 4" 
                                     Binding="{Binding Groups[4]}"/>
                 <DataGridTextColumn Header="Line" 
+                                    x:Name="lineTextColumn" 
                                     Binding="{Binding Line}"/>
             </DataGrid.Columns>
         </DataGrid>
