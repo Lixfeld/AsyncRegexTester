@@ -23,11 +23,16 @@ namespace AsyncRegexTester
         //No INotifyPropertyChanged Implementation (readonly) - Setter is needed for OneWayToSource-Binding
         public string InputText { get; set; }
         public string RegexPattern { get; set; }
+        public bool IsSingleline { get; set; }
+        public bool IsMultiline { get; set; }
+        public bool IgnoreCase { get; set; }
+        public bool ReadLineByLine { get; set; }
 
         public MainWindow()
         {
             InitializeComponent();
             DataContext = this;
+            readLineByLineCheckBox.IsChecked = true;
 
             //Set DataGridColumns for groups (see xaml code)
             dataGridGroupColumns = new ObservableCollection<DataGridColumn>()
@@ -40,7 +45,7 @@ namespace AsyncRegexTester
             };
         }
 
-        private async void startButton_Click(object sender, RoutedEventArgs e)
+        private async void StartButton_Click(object sender, RoutedEventArgs e)
         {
             cancelButton.IsEnabled = true;
             startButton.IsEnabled = false;
@@ -71,23 +76,38 @@ namespace AsyncRegexTester
                 int matchCount = 0;
                 Match currentMatch;
                 IEnumerable<string> groups;
-                Regex regex = new Regex(RegexPattern, RegexOptions.Multiline);
-                for (int i = 0; i < lines.Count(); i++)
+
+                Regex regex = new Regex(RegexPattern, GetRegexOptions());
+                if (ReadLineByLine)
                 {
-                    //Cancellation
-                    token.ThrowIfCancellationRequested();
-
-                    currentMatch = regex.Match(lines[i]);
-                    if (currentMatch.Success)
+                    for (int i = 0; i < lines.Count(); i++)
                     {
-                        //Fake delay
-                        await Task.Delay(TimeSpan.FromSeconds(0.5));
+                        //Cancellation
+                        token.ThrowIfCancellationRequested();
 
-                        //Add matches/groups and line to collection
-                        groups = currentMatch.Groups.OfType<Group>().Select(g => g.Value);
-                        RegexResultCollection.Add(new RegexResult(++matchCount, lines[i], groups));
+                        currentMatch = regex.Match(lines[i]);
+                        if (currentMatch.Success)
+                        {
+                            //Fake delay
+                            await Task.Delay(TimeSpan.FromSeconds(0.5));
+
+                            //Add matches/groups and line to collection
+                            groups = currentMatch.Groups.OfType<Group>().Select(g => g.Value);
+                            RegexResultCollection.Add(new RegexResult(++matchCount, lines[i], groups));
+                        }
+                        progress.Report(new ProgressStatus(i + 1, "Matches: " + matchCount));
                     }
-                    progress.Report(new ProgressStatus(i + 1, "Matches: " + matchCount));
+                }
+                else
+                {
+                    MatchCollection matches = regex.Matches(InputText);
+                    for (int i = 0; i < matches.Count; i++)
+                    {
+                        //Add matches/groups to collection
+                        groups = matches[i].Groups.OfType<Group>().Select(g => g.Value);
+                        RegexResultCollection.Add(new RegexResult(++matchCount, string.Empty, groups));
+                    }
+                    progress.Report(new ProgressStatus(lines.Count, "Matches: " + matchCount));
                 }
             }
             catch (Exception)
@@ -101,15 +121,27 @@ namespace AsyncRegexTester
             }
         }
 
-        private void cancelButton_Click(object sender, RoutedEventArgs e)
+        private RegexOptions GetRegexOptions()
+        {
+            RegexOptions regexOptions = RegexOptions.None;
+            if (IsSingleline)
+                regexOptions |= RegexOptions.Singleline;
+            if (IsMultiline)
+                regexOptions |= RegexOptions.Multiline;
+            if (IgnoreCase)
+                regexOptions |= RegexOptions.IgnoreCase;
+            return regexOptions;
+        }
+
+        private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             cancellationTokenSource.Cancel();
             cancelButton.IsEnabled = false;
         }
 
-        private void regexPatternTextBox_TextChanged(object sender, TextChangedEventArgs e) => SetStartButtonStatus();
+        private void RegexPatternTextBox_TextChanged(object sender, TextChangedEventArgs e) => SetStartButtonStatus();
 
-        private void inputTextBox_TextChanged(object sender, TextChangedEventArgs e) => SetStartButtonStatus();
+        private void InputTextBox_TextChanged(object sender, TextChangedEventArgs e) => SetStartButtonStatus();
 
         private void SetStartButtonStatus()
         {
@@ -139,6 +171,9 @@ namespace AsyncRegexTester
             {
                 dataGridGroupColumns[i].Visibility = Visibility.Visible;
             }
+
+            //Hide Line column if option read line-by-line is turned off
+            lineTextColumn.Visibility = ReadLineByLine ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 }
